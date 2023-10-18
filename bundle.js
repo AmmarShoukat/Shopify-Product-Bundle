@@ -192,86 +192,101 @@
 // if u want to uncheck all the boxes by default and also disable the button by default and send only checked product to cart then this code will work for u
 
 function frequently_bundle() {
-  const data = {
-    items: []
-  };
+    const data = {
+      items: [],
+    };
 
-  if ($("#product1_chk").is(":checked")) {
-    addItemToCart(data, "product1_id", "product1_chk");
+    // Loop through each checkbox
+    $("input[id^='product']").each(function() {
+      const checkbox = $(this);
+      const productId = checkbox.attr('id');
+      const isChecked = checkbox.is(":checked");
+
+      if (isChecked) {
+        addItemToCart(data, productId);
+      }
+    });
+
+    sendToCart(data);
+
+    $(".atc_btn .btn--add-to-cart .btn__text").text('Adding to cart');
+    setTimeout(function () {
+      $(".atc_btn .btn--add-to-cart .btn__text").text('Add to cart');
+    }, 1000);
   }
-  if ($("#product2_chk").is(":checked")) {
-    addItemToCart(data, "product2_id", "product2_chk");
+
+  function addItemToCart(data, productId) {
+    const p_id = productId.replace("product", "");
+    const p_price = parseFloat($("#v" + p_id).attr('data-price'));
+    data.items.push({
+      quantity: 1,
+      id: p_id,
+      price: p_price,
+    });
   }
-  if ($("#product3_chk").is(":checked")) {
-    addItemToCart(data, "product3_id", "product3_chk");
+
+  function sendToCart(data) {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/cart/add.js', true);
+    xhr.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
+    xhr.send(JSON.stringify(data));
   }
 
-  sendToCart(data);
+  function enableCartButton() {
+    $(".atc_btn .btn--add-to-cart").prop('disabled', false);
+  }
 
-  $(".atc_btn .btn--add-to-cart .btn__text").text('Adding to cart');
-  setTimeout(function () { $(".atc_btn .btn--add-to-cart .btn__text").text('Add to cart'); }, 1000);
-}
+  function disableCartButton() {
+    $(".atc_btn .btn--add-to-cart").prop('disabled', true);
+  }
 
-function addItemToCart(data, productId, checkboxId) {
-  const p_id = parseInt($("#" + productId).val());
-  const p_price = parseFloat($("#v" + p_id).attr('data-price'));
-  data.items.push({ quantity: 1, id: p_id, price: p_price });
-}
+  // Add click event for nws-bundle-text div
+  $(".nws-bundle-text").click(function () {
+    const checkbox = $(this).find("input:checkbox");
+    checkbox.prop('checked', !checkbox.prop('checked'));
 
-function sendToCart(data) {
-  const xhr = new XMLHttpRequest();
-  xhr.open('POST', '/cart/add.js', true);
-  xhr.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
-  xhr.send(JSON.stringify(data));
-}
+    handleCheckboxClick(checkbox);
+  });
 
-function disableAddToCartButton() {
-  $(".atc_btn .btn--add-to-cart").prop('disabled', true);
-}
-
-function enableAddToCartButton() {
-  $(".atc_btn .btn--add-to-cart").prop('disabled', false);
-}
-
-function handleCheckboxClick(checkboxId) {
-  $("#" + checkboxId).click(function () {
-    const checked = $("input[id='" + checkboxId + "']:checked").length;
+  function handleCheckboxClick(checkbox) {
+    const checked = $("input:checkbox:checked").length;
     if (checked > 0) {
-      enableAddToCartButton();
+      enableCartButton();
     } else {
-      disableAddToCartButton();
+      disableCartButton();
     }
+  }
+
+  function handleProductChange(productId, dataId, priceElementId) {
+    $("#" + productId).change(function () {
+      const p_id = $(this).val();
+      const p_price = $("#v" + p_id).attr('data-price');
+      $(dataId).attr('data-price', p_price);
+
+      const p_v1 = $("#p_v1").attr('data-price');
+      const p_v2 = $("#p_v2").attr('data-price');
+      const p_v3 = $("#p_v3").attr('data-price');
+
+      const t_price = Number(p_v1) + Number(p_v2) + Number(p_v3);
+      $("#t_price span").text(t_price.toFixed(2));
+    });
+  }
+
+  // Initialize by disabling the "Add to cart" button.
+  disableCartButton();
+
+  // Attach event handlers
+  handleProductChange("product1_id", "#p_v1", "p_v1");
+  handleProductChange("product2_id", "#p_v2", "p_v2");
+  handleProductChange("product3_id", "#p_v3", "p_v3");
+
+  // Initial state: Uncheck all checkboxes
+  $("input[id^='product']").prop('checked', false);
+
+  $(document).ready(function () {
+    $(".atc_btn .btn.btn--add-to-cart").click(function () {
+      setTimeout(function () {
+        location.reload();
+      }, 1000);
+    });
   });
-}
-
-function handleProductChange(productId, dataId, priceElementId) {
-  $("#" + productId).change(function () {
-    const p_id = $(this).val();
-    const p_price = $("#v" + p_id).attr('data-price');
-    $(dataId).attr('data-price', p_price);
-
-    const p_v1 = $("#p_v1").attr('data-price');
-    const p_v2 = $("#p_v2").attr('data-price');
-    const p_v3 = $("#p_v3").attr('data-price');
-
-    const t_price = Number(p_v1) + Number(p_v2) + Number(p_v3);
-    $("#t_price span").text(t_price.toFixed(2));
-  });
-}
-
-// Initialize by disabling the "Add to cart" button.
-disableAddToCartButton();
-
-// Attach event handlers
-handleCheckboxClick("product1_chk");
-handleCheckboxClick("product2_chk");
-handleCheckboxClick("product3_chk");
-
-handleProductChange("product1_id", "#p_v1", "p_v1");
-handleProductChange("product2_id", "#p_v2", "p_v2");
-handleProductChange("product3_id", "#p_v3", "p_v3");
-
-// Initial state: Uncheck all checkboxes
-$("#product1_chk").prop('checked', false);
-$("#product2_chk").prop('checked', false);
-$("#product3_chk").prop('checked', false);
